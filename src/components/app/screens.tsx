@@ -318,39 +318,66 @@ export function Recipes({ open }: { open: (o: Open) => void }) {
 }
 
 /* ---------- Pantry ---------- */
+function splitName(full: string) {
+  const m = full.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+  if (!m) return { title: full, store: null as string | null, promo: false };
+  const parts = m[2].split(",").map((s) => s.trim());
+  return { title: m[1], store: parts.filter((s) => s !== "promo").join(", ") || null, promo: parts.includes("promo") };
+}
+
+function Tile({ p, title }: { p: Product; title: string }) {
+  if (p.img) return <img alt="" className="size-12 shrink-0 rounded-xl bg-raise object-cover" src={p.img} />;
+  return <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-raise text-[16px] font-bold text-amber">{title.charAt(0).toUpperCase()}</span>;
+}
+
+function StoreChip({ store }: { store: string }) {
+  const mart = /mart/i.test(store);
+  return (
+    <span className={cn("shrink-0 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-none", mart ? "bg-amber/15 text-[#c24d00]" : "bg-[#1d6fe0]/12 text-[#1d6fe0]")}>{store}</span>
+  );
+}
+
 function ProductRow({ p, rank, best, open }: { p: Product; rank?: number; best?: number; open: (o: Open) => void }) {
   const low = p.stock != null && p.stock < p.pack_size * 0.25;
   const per = egpPer10gProtein(p);
+  const { title, store, promo } = splitName(p.name);
   return (
-    <button className="flex min-h-14 w-full items-center gap-3 py-2.5 text-left" onClick={() => open({ kind: "product", id: p.id })} type="button">
-      {rank != null ? <span className={cn("w-5 text-center text-[14px] font-bold", rank === 1 ? "text-sky" : "text-zinc-400")}>{rank}</span> : <Thumb o={p} size={36} />}
+    <button className="flex min-h-[68px] w-full items-center gap-3 py-2.5 text-left" onClick={() => open({ kind: "product", id: p.id })} type="button">
+      {rank != null && <span className={cn("w-4 text-center text-[13px] font-bold", rank === 1 ? "text-amber" : "text-zinc-400")}>{rank}</span>}
+      <Tile p={p} title={title} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold">{p.name}</span>
-        <span className="num block text-[12.5px] text-zinc-600">
-          {fmt(p.pack_size)}
-          {p.unit} · {fmt(p.price)} EGP
-          {p.stock != null && <span className={low ? "text-bad" : ""}> · {fmt(p.stock)}{p.unit} left</span>}
+        <span className="line-clamp-2 text-[15px] font-semibold leading-tight text-ink">{title}</span>
+        <span className="mt-1 flex items-center gap-1.5 text-[12px] text-zinc-600">
+          {store && <StoreChip store={store.replace("Talabat Mart", "Mart")} />}
+          {promo && <span className="shrink-0 rounded-md bg-bad/10 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-bad">promo</span>}
+          <span className="num truncate">
+            {rank != null ? `${fmt(p.price)} EGP` : `${fmt(p.protein ?? 0)}g protein`}
+            {p.stock != null && <span className={low ? "text-bad" : ""}> · {fmt(p.stock)}{p.unit} left</span>}
+          </span>
         </span>
         {rank != null && best != null && (
           <span className="mt-1.5 block h-[3px] max-w-40 overflow-hidden rounded-full bg-zinc-200">
-            <span className="block h-full rounded-full bg-sky" style={{ width: `${Math.max((best / per) * 100, 6)}%` }} />
+            <span className="block h-full rounded-full bg-amber" style={{ width: `${Math.max((best / per) * 100, 6)}%` }} />
           </span>
         )}
       </span>
-      <span className="num shrink-0 text-right text-[12px] text-zinc-600">
-        <b className="block text-[14.5px] font-semibold text-ink">{rank != null ? fmt(per) : `${fmt(p.protein ?? 0)}g`}</b>
-        {rank != null ? "EGP / 10g protein" : `protein / ${p.unit === "pc" ? "piece" : `100${p.unit}`}`}
+      <span className="num shrink-0 whitespace-nowrap text-right text-[12px] text-zinc-600">
+        <b className="block text-[15.5px] font-bold text-ink">{rank != null ? fmt(per) : fmt(p.price)}</b>
+        {rank != null ? "EGP / 10g" : `EGP · ${fmt(p.pack_size)}${p.unit}`}
       </span>
     </button>
   );
 }
+
+/* only foods that are really protein sources get ranked */
+const isProteinFood = (p: Product) => (p.unit === "pc" ? (p.protein ?? 0) >= 5 : (p.protein ?? 0) >= 15);
 
 export function Pantry({ open }: { open: (o: Open) => void }) {
   const { products } = useData();
   const [q, setQ] = useState("");
   const all = Object.values(products);
   const shown = all.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()));
-  const ranked = shown.filter((p) => Number.isFinite(egpPer10gProtein(p))).sort((a, b) => egpPer10gProtein(a) - egpPer10gProtein(b));
+  const ranked = shown.filter((p) => isProteinFood(p) && Number.isFinite(egpPer10gProtein(p))).sort((a, b) => egpPer10gProtein(a) - egpPer10gProtein(b));
   const low = all.filter((p) => p.stock != null && p.stock < p.pack_size * 0.25).length;
   const list = (ps: Product[], rank: boolean) =>
     ps.length ? (
@@ -386,7 +413,7 @@ export function Pantry({ open }: { open: (o: Open) => void }) {
             className="w-full max-w-none [&>div:first-child>div]:w-full [&>div:last-child]:border-zinc-200 [&>div:last-child]:bg-deep"
             items={[
               { id: "all", title: "All", content: list(shown, false) },
-              { id: "protein", title: "Cheapest protein", content: list(ranked, true) },
+              { id: "protein", title: "Best protein value", content: list(ranked, true) },
             ]}
             label="Pantry view"
           />
