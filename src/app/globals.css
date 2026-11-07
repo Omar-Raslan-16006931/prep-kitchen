@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Palette: the user's six swatches. Kokonut components are written against zinc/orange/blue,
+   so those scales are remapped onto the palette and every component inherits it. */
+@theme {
+  --color-zinc-50: #fffaf4;
+  --color-zinc-100: #fff1e3;
+  --color-zinc-200: #f6e2ce;
+  --color-zinc-300: #e9cbb0;
+  --color-zinc-400: #c9a78a;
+  --color-zinc-500: #9c7a60;
+  --color-zinc-600: #7a5a43;
+  --color-zinc-700: #5c412e;
+  --color-zinc-800: #3f2a1c;
+  --color-zinc-900: #2a1608;
+  --color-zinc-950: #1a0c03;
+
+  /* bright, warm, no blue */
+  --color-night: #fff6ec;   /* page + inputs */
+  --color-deep: #ffffff;    /* cards, sheets */
+  --color-raise: #ffeedd;   /* selected day, toast */
+  --color-slate: #e9cbb0;   /* rings, empty checks */
+  --color-sky: #1fa463;     /* fresh green: done, protein, active tab */
+  --color-sand: #2a1608;    /* headings, big numbers */
+  --color-amber: #ff6b1a;   /* tangerine: main action, money */
+  --color-ink: #2a1608;
+  --color-bad: #e5484d;
+
+  --color-orange-500: #ff6b1a;
+  --color-blue-500: #1fa463;
+
+  --font-display: "Anybody", "Arial Narrow", system-ui, sans-serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+html,
+body {
+  background: var(--color-night);
+  color: var(--color-ink);
+}
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+input,
+select,
+textarea {
+  font-size: 16px; /* stops iOS zoom on focus */
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.pt-safe {
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+.pb-safe {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
